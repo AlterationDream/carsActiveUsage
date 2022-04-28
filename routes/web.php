@@ -14,26 +14,26 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    return view('run-api');
 });
 
 Route::controller(\App\Http\Controllers\UserController::class)->group(function () {
-    Route::get('users', 'index');
-    Route::post('users/create', 'store');
-    Route::post('users/edit', 'update');
-    Route::post('users/remove', 'remove');
+    Route::post('api/users/list', 'list');
+    Route::post('api/users/create', 'create');
+    Route::post('api/users/update', 'update');
+    Route::post('api/users/delete', 'delete');
 });
 
 Route::controller(\App\Http\Controllers\CarController::class)->group(function () {
-    Route::get('cars', 'index');
-    Route::post('cars/create', 'store');
-    Route::post('cars/edit', 'update');
-    Route::post('cars/remove', 'remove');
+    Route::post('api/cars/list', 'list');
+    Route::post('api/cars/create', 'create');
+    Route::post('api/cars/update', 'update');
+    Route::post('api/cars/delete', 'delete');
 });
 
 Route::controller(\App\Http\Controllers\ActiveUseController::class)->group(function () {
-    Route::get('/', 'index');
-    Route::post('create', 'store');
-    Route::post('edit', 'update');
-    Route::post('remove', 'remove');
+    Route::post('api/active-uses/list', 'list');
+    Route::post('api/active-uses/create', 'create');
+    Route::post('api/active-uses/update', 'update');
+    Route::post('api/active-uses/delete', 'delete');
 });

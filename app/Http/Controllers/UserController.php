@@ -3,69 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\ParametersValidationService;
 use Illuminate\Http\Request;
-use App\Services\ValidationMessageService;
+use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
-    private const USER_NAME = 'Имя водителя';
-    private const USER_ID = 'ID водителя';
-
-    private $message;
+    private ParametersValidationService $validator;
 
     public function __construct() {
-        $this->message = new ValidationMessageService();
+        $this->validator = new ParametersValidationService('user');
     }
 
-    public function index() {
-        $users = User::all();
-        return view('users', ['users' => $users]);
+
+    public function list(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('list', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
+
+        $limit = -1;
+        if ($request->exists('limit')) $limit = $request->limit;
+        $users = User::limit($limit)->get();
+
+        return response()->json($users, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function store(Request $request) {
-        $this->validate($request, [
-            'name' => 'string|min:1|unique:users,name'
-        ],[
-            'name.string' => self::USER_NAME . $this->message->string('m'),
-            'name.min' => self::USER_NAME . $this->message->empty('m'),
-            'name.unique' => self::USER_NAME . $this->message->unique()
-        ]);
+    public function create(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('create', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
 
         $user = new User;
-        $user->name = $request->name;
+        $user->name = trim($request->name);
         $user->save();
 
-        return back();
+        return response()->json($user, 201, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function update(Request $request) {
-        $this->validate($request, [
-            'id' => 'integer|exists:users,id',
-            'name' => 'string|min:1|unique:users,name'
-        ],[
-            'id.integer' => self::USER_ID . $this->message->integer('m'),
-            'name.string' => self::USER_NAME . $this->message->string('m'),
-            'name.min' => self::USER_NAME . $this->message->empty('m'),
-            'name.unique' => self::USER_NAME . $this->message->unique()
-        ]);
+    public function update(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('update', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
 
         $user = User::find($request->id);
         $user->name = trim($request->name);
         $user->save();
 
-        return back();
+        return response()->json($user, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function remove(Request $request) {
-        $this->validate($request, [
-            'id' => 'integer'
-        ],[
-            'id.integer' => self::USER_ID . $this->message->integer('m')
-        ]);
+    public function delete(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('delete', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
 
         $user = User::find($request->id);
         $user->delete();
 
-        return back();
+        return response()->json($user, 200, [], JSON_UNESCAPED_UNICODE);
     }
 }

@@ -1,6 +1,9 @@
 <?php
 namespace App\Services;
 
+/**
+ * Сервис управляющий выдачей локализованных сообщений валидации параметров.
+ * */
 class ValidationMessageService
 {
 
@@ -38,6 +41,16 @@ class ValidationMessageService
     {
         $gender = $this->found($gender);
         return ' не найден' . $gender . ' в базе данных.';
+    }
+
+    public function lessThan($value) : string
+    {
+        return ' не может быть меньше ' . $value;
+    }
+
+    public function used($gender) : string
+    {
+        return ' не может быть удален' . $this->found($gender) . ', пока участвует в активном использовании.';
     }
 
     private function hasTo($gender) : string

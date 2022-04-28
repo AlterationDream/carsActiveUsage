@@ -3,70 +3,69 @@
 namespace App\Http\Controllers;
 
 use App\Models\Car;
-use App\Services\ValidationMessageService;
+use App\Services\ParametersValidationService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 
 class CarController extends Controller
 {
-    private const CAR_NAME = 'Название машины';
-    private const CAR_ID = 'ID машины';
-
-    private $message;
+    private ParametersValidationService $validator;
 
     public function __construct() {
-        $this->message = new ValidationMessageService();
+        $this->validator = new ParametersValidationService('car');
     }
 
-    public function index() {
-        $cars = Car::all();
-        return view('cars', ['cars' => $cars]);
+
+    public function list(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('list', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
+
+        $limit = -1;
+        if ($request->exists('limit')) $limit = $request->limit;
+        $cars = Car::limit($limit)->get();
+
+        return response()->json($cars, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function store(Request $request) {
-        $this->validate($request, [
-            'name' => 'string|min:1|unique:cars,name'
-        ],[
-            'name.string' => self::CAR_NAME . $this->message->string('n'),
-            'name.min' => self::CAR_NAME . $this->message->empty('n'),
-            'name.unique' => self::CAR_NAME . $this->message->unique()
-        ]);
+    public function create(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('create', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
 
         $car = new Car;
-        $car->name = $request->name;
+        $car->name = trim($request->name);
         $car->save();
 
-        return back();
+        return response()->json($car, 201, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function update(Request $request) {
-
-        $this->validate($request, [
-            'id' => 'integer|exists:cars,id',
-            'name' => 'string|min:1|unique:cars,name'
-        ],[
-            'id.integer' => self::CAR_ID . $this->message->integer('m'),
-            'name.string' => self::CAR_NAME . $this->message->string('m'),
-            'name.min' => self::CAR_NAME . $this->message->empty('m'),
-            'name.unique' => self::CAR_NAME . $this->message->unique()
-        ]);
+    public function update(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('update', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
 
         $car = Car::find($request->id);
         $car->name = trim($request->name);
         $car->save();
 
-        return back();
+        return response()->json($car, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function remove(Request $request) {
-        $this->validate($request, [
-            'id' => 'integer'
-        ],[
-            'id.integer' => self::CAR_ID . $this->message->integer('m')
-        ]);
+    public function delete(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('delete', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
+
 
         $car = Car::find($request->id);
         $car->delete();
 
-        return back();
+        return response()->json($car, 200, [], JSON_UNESCAPED_UNICODE);
     }
 }

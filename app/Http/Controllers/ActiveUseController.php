@@ -3,89 +3,70 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActiveUse;
-use App\Models\Car;
-use App\Models\User;
-use App\Services\ValidationMessageService;
+use App\Services\ParametersValidationService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 
 class ActiveUseController extends Controller
 {
-    private const ACTIVE_USE_ID = 'ID активного использования';
-    private const USER_ID = 'ID водителя';
-    private const CAR_ID = 'ID машины';
+    private ParametersValidationService $validator;
 
-    private $message;
-
-    public function __construct()
-    {
-        $this->message = new ValidationMessageService();
+    public function __construct() {
+        $this->validator = new ParametersValidationService();
     }
 
-    public function index() {
-        $activeUses = ActiveUse::all();
-        $cars = Car::all();
-        $users = User::all();
-        return view('active-uses', [
-            'activeUses' => $activeUses,
-            'cars' => $cars,
-            'users' => $users
-        ]);
+
+    public function list(Request $request) : JsonResponse
+    {
+        $validator = $this->validator->validateCase('list', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
+
+        $limit = -1;
+        if ($request->exists('limit')) $limit = $request->limit;
+        $activeUses = ActiveUse::limit($limit)->get();
+
+        return response()->json($activeUses, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function store(Request $request)
+    public function create(Request $request) : JsonResponse
     {
-        $this->validate($request, [
-            'user_id' => 'integer|unique:active_uses,user_id',
-            'car_id' => 'integer|unique:active_uses,car_id'
-        ],[
-            'user_id.integer' => self::USER_ID . $this->message->integer('m'),
-            'user_id.unique' => self::USER_ID . $this->message->unique(),
-            'car_id.integer' => self::CAR_ID . $this->message->integer('m'),
-            'car_id.unique' => self::CAR_ID . $this->message->unique()
-        ]);
+        $validator = $this->validator->validateCase('create', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
 
         $activeUse = new ActiveUse();
         $activeUse->user_id = $request->user_id;
         $activeUse->car_id = $request->car_id;
         $activeUse->save();
 
-        return back();
+        return response()->json($activeUse, 201, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function update(Request $request)
+    public function update(Request $request) : JsonResponse
     {
-        $this->validate($request, [
-            'id' => 'integer|exists:active_uses,id',
-            'user_id' => 'integer|unique:active_uses,user_id,' . $request->id,
-            'car_id' => 'integer|unique:active_uses,car_id,' . $request->id
-        ],[
-            'id.integer' => self::ACTIVE_USE_ID . $this->message->integer('m'),
-            'id.exists' => self::ACTIVE_USE_ID . $this->message->exists('m'),
-            'user_id.integer' => self::USER_ID . $this->message->integer('m'),
-            'user_id.exists' => self::USER_ID . $this->message->exists('m'),
-            'car_id.integer' => self::CAR_ID . $this->message->integer('m'),
-            'car_id.exists' => self::CAR_ID . $this->message->exists('m')
-        ]);
+        $validator = $this->validator->validateCase('update', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
 
         $activeUse = ActiveUse::find($request->id);
         $activeUse->car_id = $request->car_id;
         $activeUse->user_id = $request->user_id;
         $activeUse->save();
 
-        return back();
+        return response()->json($activeUse, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function remove(Request $request)
+    public function delete(Request $request) : JsonResponse
     {
-        $this->validate($request, [
-            'id' => 'integer'
-        ],[
-            'id.integer' => self::ACTIVE_USE_ID . $this->message->integer('m')
-        ]);
+        $validator = $this->validator->validateCase('delete', $request);
+        if ($validator->fails()) return response()
+            ->json($validator->messages(), Response::HTTP_BAD_REQUEST, [], JSON_UNESCAPED_UNICODE);
 
         $activeUse = ActiveUse::find($request->id);
         $activeUse->delete();
 
-        return back();
+        return response()->json($activeUse, 200, [], JSON_UNESCAPED_UNICODE);
     }
 }
